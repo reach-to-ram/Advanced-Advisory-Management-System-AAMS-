@@ -1,0 +1,1266 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CERT-In Advisory Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f4f8;
+        }
+
+        .scrollbar-hide::-webkit-scrollbar {
+            display: none;
+        }
+
+        .scrollbar-hide {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        .alert-card {
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .alert-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+
+        .critical-glow {
+            animation: pulse 2s infinite;
+            box-shadow: 0 0 15px rgba(239, 68, 68, 0.7);
+        }
+
+        @keyframes pulse {
+            0% {
+                box-shadow: 0 0 15px rgba(239, 68, 68, 0.7);
+            }
+
+            50% {
+                box-shadow: 0 0 25px rgba(239, 68, 68, 0.9);
+            }
+
+            100% {
+                box-shadow: 0 0 15px rgba(239, 68, 68, 0.7);
+            }
+        }
+
+        .sector-card {
+            transition: all 0.3s ease;
+        }
+
+        .sector-card:hover {
+            transform: scale(1.03);
+        }
+
+        .news-item {
+            transition: background-color 0.2s;
+        }
+
+        .news-item:hover {
+            background-color: #f3f4f6;
+        }
+
+        .news-item.active {
+            background-color: #e5edff;
+            border-left: 4px solid #3b82f6;
+        }
+
+        .priority-badge {
+            font-size: 0.7rem;
+            padding: 0.15rem 0.5rem;
+            border-radius: 9999px;
+        }
+
+        .priority-filter.active {
+            color: white;
+        }
+
+        .slider-dots {
+            display: flex;
+            justify-content: center;
+            margin-top: 1rem;
+        }
+
+        .slider-dot {
+            height: 8px;
+            width: 8px;
+            border-radius: 50%;
+            background-color: #cbd5e0;
+            margin: 0 4px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .slider-dot.active {
+            background-color: #3b82f6;
+        }
+
+        .sector-filter.active {
+            background-color: #3b82f6;
+            color: white;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="min-h-screen flex flex-col">
+        <!-- Header -->
+        <header class="bg-gradient-to-r from-blue-900 to-indigo-800 text-white shadow-lg">
+            <div class="container mx-auto px-4 py-3 flex justify-between items-center">
+                <div class="flex items-center space-x-3">
+                    <!-- CERT-In Logo -->
+                    <div class="h-12 w-12 rounded-full bg-white p-1 flex items-center justify-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
+                            class="h-10 w-10 text-blue-900 fill-current">
+                            <path
+                                d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z" />
+                        </svg>
+                    </div>
+                    <div>
+                        <h1 class="text-2xl font-bold">CERT-In</h1>
+                        <p class="text-xs text-blue-100">Indian Computer Emergency Response Team</p>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <button
+                        class="bg-blue-700 hover:bg-blue-600 text-white rounded-full px-4 py-1 text-sm flex items-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24"
+                            stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                        </svg>
+                        New Advisory
+                    </button>
+                    <div class="flex items-center space-x-2">
+                        <div
+                            class="h-8 w-8 rounded-full bg-blue-700 flex items-center justify-center text-sm font-medium">
+                            AD
+                        </div>
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24"
+                            stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                        </svg>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="flex-grow container mx-auto px-4 py-6">
+            <!-- Section 1: Critical Alerts with Auto-Scroll -->
+            <section class="mb-8">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-xl font-bold text-gray-800">Critical Alerts</h2>
+                    <button class="text-blue-600 hover:text-blue-800 text-sm font-medium flex items-center">
+                        View All Alerts
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 ml-1" fill="none" viewBox="0 0 24 24"
+                            stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                        </svg>
+                    </button>
+                </div>
+                <div class="relative">
+                    <div class="slider-container overflow-hidden">
+                        <div class="slider-track flex transition-transform duration-500"
+                            style="transform: translateX(0%)">
+                            <!-- Alert 1 -->
+                            <div
+                                class="alert-card critical-glow bg-white rounded-lg shadow-md border-l-4 border-red-600 p-4 w-full md:w-1/2 lg:w-1/4 flex-shrink-0 mx-2">
+                                <div class="flex justify-between items-start mb-2">
+                                    <span
+                                        class="bg-red-100 text-red-800 text-xs font-medium px-2 py-0.5 rounded">CRITICAL</span>
+                                    <span class="text-xs text-gray-500">2h ago</span>
+                                </div>
+                                <h3 class="font-semibold text-gray-800 mb-1">Zero-day Vulnerability in OpenSSL</h3>
+                                <p class="text-sm text-gray-600 mb-3">Critical vulnerability affecting TLS/SSL
+                                    implementations across multiple sectors.</p>
+                                <div class="flex justify-between items-center">
+                                    <span class="bg-blue-100 text-blue-800 text-xs px-2 py-0.5 rounded">Defence</span>
+                                    <button class="text-blue-600 hover:text-blue-800 text-sm font-medium">View
+                                        Details</button>
+                                </div>
+                            </div>
+
+                            <!-- Alert 2 -->
+                            <div
+                                class="alert-card critical-glow bg-white rounded-lg shadow-md border-l-4 border-red-600 p-4 w-full md:w-1/2 lg:w-1/4 flex-shrink-0 mx-2">
+                                <div class="flex justify-between items-start mb-2">
+                                    <span
+                                        class="bg-red-100 text-red-800 text-xs font-medium px-2 py-0.5 rounded">CRITICAL</span>
+                                    <span class="text-xs text-gray-500">4h ago</span>
+                                </div>
+                                <h3 class="font-semibold text-gray-800 mb-1">Ransomware Campaign Targeting Financial
+                                    Institutions</h3>
+                                <p class="text-sm text-gray-600 mb-3">New strain of ransomware targeting banking
+                                    infrastructure detected.</p>
+                                <div class="flex justify-between items-center">
+                                    <span class="bg-blue-100 text-blue-800 text-xs px-2 py-0.5 rounded">Finance</span>
+                                    <button class="text-blue-600 hover:text-blue-800 text-sm font-medium">View
+                                        Details</button>
+                                </div>
+                            </div>
+
+                            <!-- Alert 3 -->
+                            <div
+                                class="alert-card critical-glow bg-white rounded-lg shadow-md border-l-4 border-red-600 p-4 w-full md:w-1/2 lg:w-1/4 flex-shrink-0 mx-2">
+                                <div class="flex justify-between items-start mb-2">
+                                    <span
+                                        class="bg-red-100 text-red-800 text-xs font-medium px-2 py-0.5 rounded">CRITICAL</span>
+                                    <span class="text-xs text-gray-500">6h ago</span>
+                                </div>
+                                <h3 class="font-semibold text-gray-800 mb-1">Critical Infrastructure Vulnerability in
+                                    Power Grid Systems</h3>
+                                <p class="text-sm text-gray-600 mb-3">A zero-day vulnerability has been identified in
+                                    widely deployed SCADA systems.</p>
+                                <div class="flex justify-between items-center">
+                                    <span class="bg-blue-100 text-blue-800 text-xs px-2 py-0.5 rounded">Power</span>
+                                    <button class="text-blue-600 hover:text-blue-800 text-sm font-medium">View
+                                        Details</button>
+                                </div>
+                            </div>
+
+                            <!-- Alert 4 -->
+                            <div
+                                class="alert-card critical-glow bg-white rounded-lg shadow-md border-l-4 border-red-600 p-4 w-full md:w-1/2 lg:w-1/4 flex-shrink-0 mx-2">
+                                <div class="flex justify-between items-start mb-2">
+                                    <span
+                                        class="bg-red-100 text-red-800 text-xs font-medium px-2 py-0.5 rounded">CRITICAL</span>
+                                    <span class="text-xs text-gray-500">8h ago</span>
+                                </div>
+                                <h3 class="font-semibold text-gray-800 mb-1">Remote Code Execution in Widely Used Web
+                                    Framework</h3>
+                                <p class="text-sm text-gray-600 mb-3">Critical vulnerability allows attackers to execute
+                                    arbitrary code on affected servers.</p>
+                                <div class="flex justify-between items-center">
+                                    <span class="bg-blue-100 text-blue-800 text-xs px-2 py-0.5 rounded">Multiple</span>
+                                    <button class="text-blue-600 hover:text-blue-800 text-sm font-medium">View
+                                        Details</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Navigation Arrows -->
+                    <button
+                        class="absolute top-1/2 left-0 transform -translate-y-1/2 bg-white rounded-full p-2 shadow-md z-10 slider-prev">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-600" fill="none"
+                            viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+                        </svg>
+                    </button>
+                    <button
+                        class="absolute top-1/2 right-0 transform -translate-y-1/2 bg-white rounded-full p-2 shadow-md z-10 slider-next">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-600" fill="none"
+                            viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                        </svg>
+                    </button>
+                </div>
+
+                <!-- Slider Dots -->
+                <div class="slider-dots mt-4"></div>
+            </section>
+
+            <!-- Section 3: Latest News by Priority and Sector -->
+            <section class="mb-8">
+                <h2 class="text-xl font-bold text-gray-800 mb-4">Latest News & Updates</h2>
+                <div class="bg-white rounded-lg shadow-md p-4">
+                    <div class="flex mb-4 items-center justify-between">
+                        <div class="flex flex-wrap gap-2 mb-4">
+                            <button
+                                class="sector-filter active bg-blue-600 text-white px-3 py-1 rounded-md text-sm font-medium"
+                                data-sector="all">All Sectors</button>
+                            <button
+                                class="sector-filter bg-gray-100 hover:bg-gray-200 text-gray-800 px-3 py-1 rounded-md text-sm font-medium"
+                                data-sector="defence">Defence</button>
+                            <button
+                                class="sector-filter bg-gray-100 hover:bg-gray-200 text-gray-800 px-3 py-1 rounded-md text-sm font-medium"
+                                data-sector="finance">Finance</button>
+                            <button
+                                class="sector-filter bg-gray-100 hover:bg-gray-200 text-gray-800 px-3 py-1 rounded-md text-sm font-medium"
+                                data-sector="education">Education</button>
+                            <button
+                                class="sector-filter bg-gray-100 hover:bg-gray-200 text-gray-800 px-3 py-1 rounded-md text-sm font-medium"
+                                data-sector="atomic">Atomic</button>
+                            <button
+                                class="sector-filter bg-gray-100 hover:bg-gray-200 text-gray-800 px-3 py-1 rounded-md text-sm font-medium"
+                                data-sector="power">Power</button>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <span class="text-sm text-gray-600">Date:</span>
+                            <input type="date" class="border border-gray-300 rounded-md px-2 py-1 text-sm"
+                                value="2023-06-15">
+                        </div>
+                    </div>
+
+                    <div class="flex flex-wrap gap-2 mb-4 priority-filters">
+                        <button
+                            class="priority-filter active bg-blue-600 text-white px-3 py-1 rounded-md text-sm font-medium"
+                            data-priority="all">All Priorities</button>
+                        <button
+                            class="priority-filter bg-red-100 text-red-800 hover:bg-red-600 hover:text-white px-3 py-1 rounded-md text-sm font-medium"
+                            data-priority="critical">Critical (10)</button>
+                        <button
+                            class="priority-filter bg-orange-100 text-orange-800 hover:bg-orange-500 hover:text-white px-3 py-1 rounded-md text-sm font-medium"
+                            data-priority="high">High (25)</button>
+                        <button
+                            class="priority-filter bg-yellow-100 text-yellow-800 hover:bg-yellow-500 hover:text-white px-3 py-1 rounded-md text-sm font-medium"
+                            data-priority="medium">Medium (42)</button>
+                        <button
+                            class="priority-filter bg-green-100 text-green-800 hover:bg-green-600 hover:text-white px-3 py-1 rounded-md text-sm font-medium"
+                            data-priority="low">Low (30)</button>
+                    </div>
+
+                    <div class="flex min-h-[calc(100vh-300px)]">
+                        <!-- News List (Left Side) -->
+                        <div class="w-1/2 border-r border-gray-200 pr-4 overflow-y-auto">
+                            <!-- News Item 1 -->
+                            <div class="news-item active p-3 border-b border-gray-100 cursor-pointer"
+                                data-priority="critical" data-sector="defence">
+                                <div class="flex justify-between items-start mb-1">
+                                    <div class="flex items-center">
+                                        <span class="priority-badge bg-red-100 text-red-800 mr-2">CRITICAL</span>
+                                        <span class="text-xs text-gray-500">June 15, 2023</span>
+                                    </div>
+                                    <span class="bg-blue-100 text-blue-800 text-xs px-2 py-0.5 rounded">Defence</span>
+                                </div>
+                                <h4 class="font-medium text-gray-800 mb-1">New Malware Targeting Defence Networks
+                                    Discovered</h4>
+                                <p class="text-xs text-gray-600 line-clamp-2">Security researchers have identified a
+                                    sophisticated malware campaign specifically targeting defence networks across
+                                    multiple countries...</p>
+                            </div>
+
+                            <!-- News Item 2 -->
+                            <div class="news-item p-3 border-b border-gray-100 cursor-pointer" data-priority="high"
+                                data-sector="finance">
+                                <div class="flex justify-between items-start mb-1">
+                                    <div class="flex items-center">
+                                        <span class="priority-badge bg-orange-100 text-orange-800 mr-2">HIGH</span>
+                                        <span class="text-xs text-gray-500">June 15, 2023</span>
+                                    </div>
+                                    <span class="bg-blue-100 text-blue-800 text-xs px-2 py-0.5 rounded">Finance</span>
+                                </div>
+                                <h4 class="font-medium text-gray-800 mb-1">Banking API Vulnerabilities Exposed in
+                                    Security Audit</h4>
+                                <p class="text-xs text-gray-600 line-clamp-2">A recent security audit has revealed
+                                    critical vulnerabilities in commonly used banking APIs that could potentially expose
+                                    customer data...</p>
+                            </div>
+
+                            <!-- News Item 3 -->
+                            <div class="news-item p-3 border-b border-gray-100 cursor-pointer" data-priority="medium"
+                                data-sector="education">
+                                <div class="flex justify-between items-start mb-1">
+                                    <div class="flex items-center">
+                                        <span class="priority-badge bg-yellow-100 text-yellow-800 mr-2">MEDIUM</span>
+                                        <span class="text-xs text-gray-500">June 15, 2023</span>
+                                    </div>
+                                    <span class="bg-blue-100 text-blue-800 text-xs px-2 py-0.5 rounded">Education</span>
+                                </div>
+                                <h4 class="font-medium text-gray-800 mb-1">Educational Institutions Face Increased
+                                    Phishing Attempts</h4>
+                                <p class="text-xs text-gray-600 line-clamp-2">Universities and schools across the
+                                    country are reporting a surge in sophisticated phishing campaigns targeting staff
+                                    and student credentials...</p>
+                            </div>
+
+                            <!-- News Item 4 -->
+                            <div class="news-item p-3 border-b border-gray-100 cursor-pointer" data-priority="critical"
+                                data-sector="power">
+                                <div class="flex justify-between items-start mb-1">
+                                    <div class="flex items-center">
+                                        <span class="priority-badge bg-red-100 text-red-800 mr-2">CRITICAL</span>
+                                        <span class="text-xs text-gray-500">June 15, 2023</span>
+                                    </div>
+                                    <span class="bg-blue-100 text-blue-800 text-xs px-2 py-0.5 rounded">Power</span>
+                                </div>
+                                <h4 class="font-medium text-gray-800 mb-1">Critical Infrastructure Vulnerability in
+                                    Power Grid Systems</h4>
+                                <p class="text-xs text-gray-600 line-clamp-2">A zero-day vulnerability has been
+                                    identified in widely deployed SCADA systems used in power grid management across
+                                    multiple states...</p>
+                            </div>
+
+                            <!-- News Item 5 -->
+                            <div class="news-item p-3 border-b border-gray-100 cursor-pointer" data-priority="high"
+                                data-sector="atomic">
+                                <div class="flex justify-between items-start mb-1">
+                                    <div class="flex items-center">
+                                        <span class="priority-badge bg-orange-100 text-orange-800 mr-2">HIGH</span>
+                                        <span class="text-xs text-gray-500">June 15, 2023</span>
+                                    </div>
+                                    <span class="bg-blue-100 text-blue-800 text-xs px-2 py-0.5 rounded">Atomic</span>
+                                </div>
+                                <h4 class="font-medium text-gray-800 mb-1">Security Protocols Updated for Nuclear
+                                    Facility Networks</h4>
+                                <p class="text-xs text-gray-600 line-clamp-2">The Department of Atomic Energy has issued
+                                    new cybersecurity guidelines following the discovery of potential vulnerabilities in
+                                    network isolation systems...</p>
+                            </div>
+
+                            <!-- News Item 6 -->
+                            <div class="news-item p-3 border-b border-gray-100 cursor-pointer" data-priority="low"
+                                data-sector="finance">
+                                <div class="flex justify-between items-start mb-1">
+                                    <div class="flex items-center">
+                                        <span class="priority-badge bg-green-100 text-green-800 mr-2">LOW</span>
+                                        <span class="text-xs text-gray-500">June 15, 2023</span>
+                                    </div>
+                                    <span class="bg-blue-100 text-blue-800 text-xs px-2 py-0.5 rounded">Finance</span>
+                                </div>
+                                <h4 class="font-medium text-gray-800 mb-1">Minor Security Update for Banking
+                                    Authentication Systems</h4>
+                                <p class="text-xs text-gray-600 line-clamp-2">A routine security update has been
+                                    released for commonly used banking authentication systems to address minor
+                                    vulnerabilities...</p>
+                            </div>
+
+                            <!-- News Item 7 -->
+                            <div class="news-item p-3 border-b border-gray-100 cursor-pointer" data-priority="medium"
+                                data-sector="defence">
+                                <div class="flex justify-between items-start mb-1">
+                                    <div class="flex items-center">
+                                        <span class="priority-badge bg-yellow-100 text-yellow-800 mr-2">MEDIUM</span>
+                                        <span class="text-xs text-gray-500">June 14, 2023</span>
+                                    </div>
+                                    <span class="bg-blue-100 text-blue-800 text-xs px-2 py-0.5 rounded">Defence</span>
+                                </div>
+                                <h4 class="font-medium text-gray-800 mb-1">Firmware Update Required for Military
+                                    Communication Devices</h4>
+                                <p class="text-xs text-gray-600 line-clamp-2">A security patch has been released for
+                                    communication devices used in defence operations to address potential
+                                    vulnerabilities...</p>
+                            </div>
+
+                            <!-- News Item 8 -->
+                            <div class="news-item p-3 border-b border-gray-100 cursor-pointer" data-priority="low"
+                                data-sector="education">
+                                <div class="flex justify-between items-start mb-1">
+                                    <div class="flex items-center">
+                                        <span class="priority-badge bg-green-100 text-green-800 mr-2">LOW</span>
+                                        <span class="text-xs text-gray-500">June 14, 2023</span>
+                                    </div>
+                                    <span class="bg-blue-100 text-blue-800 text-xs px-2 py-0.5 rounded">Education</span>
+                                </div>
+                                <h4 class="font-medium text-gray-800 mb-1">Security Best Practices for Educational
+                                    Institutions</h4>
+                                <p class="text-xs text-gray-600 line-clamp-2">Updated guidelines for educational
+                                    institutions on implementing basic security measures to protect student and staff
+                                    data...</p>
+                            </div>
+
+                            <!-- News Item 9 -->
+                            <div class="news-item p-3 border-b border-gray-100 cursor-pointer" data-priority="critical"
+                                data-sector="defence">
+                                <div class="flex justify-between items-start mb-1">
+                                    <div class="flex items-center">
+                                        <span class="priority-badge bg-red-100 text-red-800 mr-2">CRITICAL</span>
+                                        <span class="text-xs text-gray-500">June 14, 2023</span>
+                                    </div>
+                                    <span class="bg-blue-100 text-blue-800 text-xs px-2 py-0.5 rounded">Defence</span>
+                                </div>
+                                <h4 class="font-medium text-gray-800 mb-1">Critical Vulnerability in Military
+                                    Communication Protocol</h4>
+                                <p class="text-xs text-gray-600 line-clamp-2">A severe vulnerability has been discovered
+                                    in a widely used military communication protocol that could allow unauthorized
+                                    access...</p>
+                            </div>
+
+                            <!-- News Item 10 -->
+                            <div class="news-item p-3 border-b border-gray-100 cursor-pointer" data-priority="medium"
+                                data-sector="power">
+                                <div class="flex justify-between items-start mb-1">
+                                    <div class="flex items-center">
+                                        <span class="priority-badge bg-yellow-100 text-yellow-800 mr-2">MEDIUM</span>
+                                        <span class="text-xs text-gray-500">June 13, 2023</span>
+                                    </div>
+                                    <span class="bg-blue-100 text-blue-800 text-xs px-2 py-0.5 rounded">Power</span>
+                                </div>
+                                <h4 class="font-medium text-gray-800 mb-1">Updated Security Guidelines for Power
+                                    Distribution Networks</h4>
+                                <p class="text-xs text-gray-600 line-clamp-2">New security guidelines have been issued
+                                    for power distribution networks to enhance protection against emerging cyber
+                                    threats...</p>
+                            </div>
+                        </div>
+
+                        <!-- News Detail (Right Side) -->
+                        <div class="w-1/2 pl-4 overflow-y-auto">
+                            <div class="mb-4">
+                                <div class="flex justify-between items-center">
+                                    <div>
+                                        <span
+                                            class="bg-red-100 text-red-800 text-xs font-medium px-2 py-0.5 rounded mr-2">CRITICAL</span>
+                                        <span
+                                            class="bg-blue-100 text-blue-800 text-xs px-2 py-0.5 rounded">Defence</span>
+                                    </div>
+                                    <span class="text-sm text-gray-500">Published: June 15, 2023 • 09:45 AM</span>
+                                </div>
+                                <h3 class="text-xl font-bold text-gray-800 mt-2">New Malware Targeting Defence Networks
+                                    Discovered</h3>
+                            </div>
+
+                            <div class="prose prose-sm max-w-none text-gray-600">
+                                <p>Security researchers have identified a sophisticated malware campaign specifically
+                                    targeting defence networks across multiple countries. The malware, dubbed
+                                    "ShadowStrike," appears to be part of a coordinated cyber espionage operation.</p>
+
+                                <p class="font-medium text-gray-700 mt-4">Key Findings:</p>
+                                <ul class="list-disc pl-5 space-y-1">
+                                    <li>The malware uses advanced obfuscation techniques to evade traditional detection
+                                        methods</li>
+                                    <li>Initial infection vectors include spear-phishing emails targeting specific
+                                        personnel</li>
+                                    <li>Once deployed, it establishes encrypted communication channels with command and
+                                        control servers</li>
+                                    <li>Data exfiltration capabilities focus on classified documents and network
+                                        configuration</li>
+                                    <li>Evidence suggests the campaign has been active for approximately 3 months</li>
+                                </ul>
+
+                                <p class="font-medium text-gray-700 mt-4">Affected Systems:</p>
+                                <p>The malware primarily targets Windows-based systems within secure networks, with
+                                    specific focus on workstations with access to classified information management
+                                    systems.</p>
+
+                                <p class="font-medium text-gray-700 mt-4">Recommended Actions:</p>
+                                <ol class="list-decimal pl-5 space-y-1">
+                                    <li>Immediately update all endpoint protection solutions with the latest signatures
+                                    </li>
+                                    <li>Conduct a full system scan using the provided IOCs (Indicators of Compromise)
+                                    </li>
+                                    <li>Implement network traffic analysis to identify suspicious communication patterns
+                                    </li>
+                                    <li>Enforce multi-factor authentication for all remote access</li>
+                                    <li>Review and restrict privileged account access</li>
+                                </ol>
+
+                                <p class="mt-4">CERT-In is actively monitoring this threat and will provide additional
+                                    updates as more information becomes available. Defence organizations are advised to
+                                    implement the recommended mitigations with highest priority.</p>
+                            </div>
+
+                            <div class="mt-6 flex space-x-3">
+                                <button
+                                    class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium flex items-center">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none"
+                                        viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                    </svg>
+                                    View Full Advisory
+                                </button>
+                                <button
+                                    class="border border-gray-300 hover:bg-gray-50 text-gray-700 px-4 py-2 rounded-md text-sm font-medium flex items-center">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none"
+                                        viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+                                    </svg>
+                                    Share
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Section 4: Advisory Templates -->
+            <section class="mb-8">
+                <h2 class="text-xl font-bold text-gray-800 mb-4">Advisory Templates</h2>
+                <div class="bg-white rounded-lg shadow-md p-4">
+                    <div class="flex mb-4 space-x-3">
+                        <button class="bg-red-600 text-white px-3 py-1 rounded-md text-sm font-medium">Critical</button>
+                        <button
+                            class="text-gray-600 hover:bg-gray-100 px-3 py-1 rounded-md text-sm font-medium">High</button>
+                        <button
+                            class="text-gray-600 hover:bg-gray-100 px-3 py-1 rounded-md text-sm font-medium">Medium</button>
+                        <button
+                            class="text-gray-600 hover:bg-gray-100 px-3 py-1 rounded-md text-sm font-medium">Low</button>
+                    </div>
+
+                    <!-- Auto-generated Template -->
+                    <div class="border border-gray-200 rounded-lg p-4 mb-4">
+                        <div class="flex justify-between items-start mb-3">
+                            <div>
+                                <h3 class="font-bold text-gray-800">Auto-Generated Critical Advisory</h3>
+                                <p class="text-sm text-gray-600">AI-generated template based on recent critical
+                                    vulnerabilities</p>
+                            </div>
+                            <div class="flex space-x-2">
+                                <button
+                                    class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm">Generate
+                                    Now</button>
+                                <button
+                                    class="border border-gray-300 hover:bg-gray-50 text-gray-700 px-3 py-1 rounded text-sm">Preview</button>
+                            </div>
+                        </div>
+
+                        <div class="bg-gray-50 rounded-lg p-3 mt-3">
+                            <p class="text-sm text-gray-600 mb-2">This template will be auto-generated based on:</p>
+                            <div class="flex flex-wrap gap-2">
+                                <span class="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded">Recent
+                                    Vulnerabilities</span>
+                                <span class="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded">Threat
+                                    Intelligence</span>
+                                <span class="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded">Sector-Specific
+                                    Risks</span>
+                                <span class="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded">Historical
+                                    Patterns</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Create New Template -->
+                    <div class="border border-gray-200 rounded-lg p-4 mb-4">
+                        <div class="flex justify-between items-start mb-3">
+                            <div>
+                                <h3 class="font-bold text-gray-800">Create New Advisory Template</h3>
+                                <p class="text-sm text-gray-600">Start with pre-filled headings for quick creation</p>
+                            </div>
+                            <button
+                                class="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded text-sm flex items-center">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none"
+                                    viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M12 4v16m8-8H4" />
+                                </svg>
+                                Create New
+                            </button>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                            <div>
+                                <h4 class="text-sm font-medium text-gray-700 mb-2">Pre-filled Headings:</h4>
+                                <div class="bg-gray-50 rounded-lg p-3">
+                                    <ul class="text-sm text-gray-600 space-y-2">
+                                        <li class="flex items-center">
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-gray-400 mr-2"
+                                                fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                    d="M9 5l7 7-7 7" />
+                                            </svg>
+                                            Executive Summary
+                                        </li>
+                                        <li class="flex items-center">
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-gray-400 mr-2"
+                                                fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                    d="M9 5l7 7-7 7" />
+                                            </svg>
+                                            Vulnerability Details
+                                        </li>
+                                        <li class="flex items-center">
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-gray-400 mr-2"
+                                                fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                    d="M9 5l7 7-7 7" />
+                                            </svg>
+                                            Affected Systems
+                                        </li>
+                                        <li class="flex items-center">
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-gray-400 mr-2"
+                                                fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                    d="M9 5l7 7-7 7" />
+                                            </svg>
+                                            Attack Vectors
+                                        </li>
+                                        <li class="flex items-center">
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-gray-400 mr-2"
+                                                fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                    d="M9 5l7 7-7 7" />
+                                            </svg>
+                                            Mitigation Steps
+                                        </li>
+                                    </ul>
+                                </div>
+                            </div>
+                            <div>
+                                <h4 class="text-sm font-medium text-gray-700 mb-2">Template Options:</h4>
+                                <div class="space-y-3">
+                                    <div class="flex items-center">
+                                        <input type="checkbox" id="auto-cvss"
+                                            class="h-4 w-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
+                                            checked>
+                                        <label for="auto-cvss" class="ml-2 text-sm text-gray-600">Auto-calculate CVSS
+                                            Score</label>
+                                    </div>
+                                    <div class="flex items-center">
+                                        <input type="checkbox" id="auto-cve"
+                                            class="h-4 w-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
+                                            checked>
+                                        <label for="auto-cve" class="ml-2 text-sm text-gray-600">Include CVE
+                                            References</label>
+                                    </div>
+                                    <div class="flex items-center">
+                                        <input type="checkbox" id="auto-timeline"
+                                            class="h-4 w-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
+                                            checked>
+                                        <label for="auto-timeline" class="ml-2 text-sm text-gray-600">Generate
+                                            Recommended Timeline</label>
+                                    </div>
+                                    <div class="flex items-center">
+                                        <input type="checkbox" id="auto-ioc"
+                                            class="h-4 w-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500">
+                                        <label for="auto-ioc" class="ml-2 text-sm text-gray-600">Include IOC
+                                            Section</label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-6">
+                        <h3 class="font-semibold text-gray-800 mb-3">Recent Advisories</h3>
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full divide-y divide-gray-200">
+                                <thead class="bg-gray-50">
+                                    <tr>
+                                        <th scope="col"
+                                            class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                            ID</th>
+                                        <th scope="col"
+                                            class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                            Title</th>
+                                        <th scope="col"
+                                            class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                            Sector</th>
+                                        <th scope="col"
+                                            class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                            Priority</th>
+                                        <th scope="col"
+                                            class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                            Date</th>
+                                        <th scope="col"
+                                            class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                            Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="bg-white divide-y divide-gray-200">
+                                    <tr>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">CERT-2023-0142
+                                        </td>
+                                        <td
+                                            class="px-6 py-4 whitespace-nowrap text-sm text-blue-600 hover:text-blue-800">
+                                            OpenSSL Critical Vulnerability Advisory</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">Multiple</td>
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            <span
+                                                class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">Critical</span>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">Jun 14, 2023</td>
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            <span
+                                                class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">Published</span>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">CERT-2023-0141
+                                        </td>
+                                        <td
+                                            class="px-6 py-4 whitespace-nowrap text-sm text-blue-600 hover:text-blue-800">
+                                            Banking API Security Advisory</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">Finance</td>
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            <span
+                                                class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-orange-100 text-orange-800">High</span>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">Jun 12, 2023</td>
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            <span
+                                                class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">Published</span>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">CERT-2023-0140
+                                        </td>
+                                        <td
+                                            class="px-6 py-4 whitespace-nowrap text-sm text-blue-600 hover:text-blue-800">
+                                            Educational Institution Phishing Campaign</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">Education</td>
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            <span
+                                                class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">Medium</span>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">Jun 10, 2023</td>
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            <span
+                                                class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">Published</span>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">CERT-2023-0139
+                                        </td>
+                                        <td
+                                            class="px-6 py-4 whitespace-nowrap text-sm text-blue-600 hover:text-blue-800">
+                                            SCADA Systems Vulnerability</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">Power</td>
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            <span
+                                                class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">Critical</span>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">Jun 08, 2023</td>
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            <span
+                                                class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">Published</span>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <span class="text-sm text-gray-600">Showing 4 of 128 advisories</span>
+                        </div>
+                        <div class="flex space-x-2">
+                            <button
+                                class="border border-gray-300 rounded-md px-3 py-1 text-sm text-gray-600">Previous</button>
+                            <button class="bg-blue-600 text-white rounded-md px-3 py-1 text-sm">1</button>
+                            <button class="border border-gray-300 rounded-md px-3 py-1 text-sm text-gray-600">2</button>
+                            <button class="border border-gray-300 rounded-md px-3 py-1 text-sm text-gray-600">3</button>
+                            <button
+                                class="border border-gray-300 rounded-md px-3 py-1 text-sm text-gray-600">Next</button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Section 5: Analytics Overview -->
+            <section>
+                <h2 class="text-xl font-bold text-gray-800 mb-4">Analytics Overview</h2>
+                <div class="bg-white rounded-lg shadow-md p-4">
+                    <div class="flex mb-4 space-x-3">
+                        <button class="bg-blue-600 text-white px-3 py-1 rounded-md text-sm font-medium">Daily</button>
+                        <button
+                            class="text-gray-600 hover:bg-gray-100 px-3 py-1 rounded-md text-sm font-medium">Weekly</button>
+                        <button
+                            class="text-gray-600 hover:bg-gray-100 px-3 py-1 rounded-md text-sm font-medium">Monthly</button>
+                        <button
+                            class="text-gray-600 hover:bg-gray-100 px-3 py-1 rounded-md text-sm font-medium">Quarterly</button>
+                        <button
+                            class="text-gray-600 hover:bg-gray-100 px-3 py-1 rounded-md text-sm font-medium">Yearly</button>
+                    </div>
+
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <!-- Chart 1: Completed Advisories by Priority -->
+                        <div class="border border-gray-200 rounded-lg p-4">
+                            <h3 class="font-semibold text-gray-800 mb-4">Completed Advisories by Priority</h3>
+                            <div class="h-64">
+                                <canvas id="completedByPriorityChart"></canvas>
+                            </div>
+                        </div>
+
+                        <!-- Chart 2: Completed Advisories by Sector -->
+                        <div class="border border-gray-200 rounded-lg p-4">
+                            <h3 class="font-semibold text-gray-800 mb-4">Completed Advisories by Sector</h3>
+                            <div class="h-64">
+                                <canvas id="completedBySectorChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mt-6 border-t border-gray-200 pt-4">
+                        <h3 class="font-semibold text-gray-800 mb-4">Completed Advisories by Sector and Priority</h3>
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full divide-y divide-gray-200">
+                                <thead class="bg-gray-50">
+                                    <tr>
+                                        <th scope="col"
+                                            class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                            Sector</th>
+                                        <th scope="col"
+                                            class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                            Critical</th>
+                                        <th scope="col"
+                                            class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                            High</th>
+                                        <th scope="col"
+                                            class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                            Medium</th>
+                                        <th scope="col"
+                                            class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                            Low</th>
+                                        <th scope="col"
+                                            class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                            Total</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="bg-white divide-y divide-gray-200">
+                                    <tr>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                                            Defence</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">5</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">8</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">12</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">7</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-blue-600">32
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                                            Finance</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">4</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">9</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">11</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">8</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-blue-600">32
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                                            Education</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">2</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">6</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">9</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">10</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-blue-600">27
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">Power
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">3</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">7</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">8</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">5</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-blue-600">23
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">Atomic
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">3</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">5</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">6</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">4</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-blue-600">18
+                                        </td>
+                                    </tr>
+                                </tbody>
+                                <tfoot class="bg-gray-50">
+                                    <tr>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">Total
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-red-600">17</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-orange-600">35
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-yellow-600">46
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-green-600">34
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-blue-600">132
+                                        </td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="mt-6 border-t border-gray-200 pt-4">
+                        <h3 class="font-semibold text-gray-800 mb-4">Key Performance Indicators</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                            <div class="border border-gray-200 rounded-lg p-4 text-center">
+                                <p class="text-sm text-gray-600 mb-1">Total Advisories</p>
+                                <p class="text-3xl font-bold text-blue-600">128</p>
+                                <p class="text-xs text-green-600 mt-1">↑ 12% from previous period</p>
+                            </div>
+                            <div class="border border-gray-200 rounded-lg p-4 text-center">
+                                <p class="text-sm text-gray-600 mb-1">Resolution Rate</p>
+                                <p class="text-3xl font-bold text-blue-600">87%</p>
+                                <p class="text-xs text-green-600 mt-1">↑ 5% from previous period</p>
+                            </div>
+                            <div class="border border-gray-200 rounded-lg p-4 text-center">
+                                <p class="text-sm text-gray-600 mb-1">Critical Incidents</p>
+                                <p class="text-3xl font-bold text-red-600">12</p>
+                                <p class="text-xs text-red-600 mt-1">↑ 20% from previous period</p>
+                            </div>
+                            <div class="border border-gray-200 rounded-lg p-4 text-center">
+                                <p class="text-sm text-gray-600 mb-1">Compliance Rate</p>
+                                <p class="text-3xl font-bold text-blue-600">94%</p>
+                                <p class="text-xs text-green-600 mt-1">↑ 3% from previous period</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <!-- Footer -->
+        <footer class="bg-gray-800 text-gray-300 py-6">
+            <div class="container mx-auto px-4">
+                <div class="flex flex-col md:flex-row justify-between items-center">
+                    <div class="flex items-center mb-4 md:mb-0">
+                        <div class="h-10 w-10 rounded-full bg-white p-1 flex items-center justify-center mr-3">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
+                                class="h-8 w-8 text-blue-900 fill-current">
+                                <path
+                                    d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z" />
+                            </svg>
+                        </div>
+                        <div>
+                            <h2 class="text-lg font-bold">CERT-In</h2>
+                            <p class="text-xs">Indian Computer Emergency Response Team</p>
+                        </div>
+                    </div>
+                    <div class="text-sm text-center md:text-right">
+                        <p>© 2023 CERT-In. All rights reserved.</p>
+                        <p class="mt-1">Ministry of Electronics & Information Technology, Government of India</p>
+                    </div>
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <script>
+        // Initialize charts and functionality when the DOM is loaded
+        document.addEventListener('DOMContentLoaded', function () {
+            // Set up slider functionality
+            const sliderTrack = document.querySelector('.slider-track');
+            const sliderPrev = document.querySelector('.slider-prev');
+            const sliderNext = document.querySelector('.slider-next');
+            const sliderDots = document.querySelector('.slider-dots');
+            const slides = document.querySelectorAll('.alert-card');
+
+            let currentSlide = 0;
+            const slidesPerView = window.innerWidth < 768 ? 1 : window.innerWidth < 1024 ? 2 : 4;
+            const totalSlides = Math.ceil(slides.length / slidesPerView);
+
+            // Create dots
+            for (let i = 0; i < totalSlides; i++) {
+                const dot = document.createElement('div');
+                dot.classList.add('slider-dot');
+                if (i === 0) dot.classList.add('active');
+                dot.addEventListener('click', () => goToSlide(i));
+                sliderDots.appendChild(dot);
+            }
+
+            function updateDots() {
+                const dots = document.querySelectorAll('.slider-dot');
+                dots.forEach((dot, i) => {
+                    dot.classList.toggle('active', i === currentSlide);
+                });
+            }
+
+            function goToSlide(index) {
+                currentSlide = index;
+                const slideWidth = slides[0].offsetWidth + 16; // width + margin
+                sliderTrack.style.transform = `translateX(-${currentSlide * slideWidth * slidesPerView}px)`;
+                updateDots();
+            }
+
+            sliderPrev.addEventListener('click', () => {
+                if (currentSlide > 0) {
+                    goToSlide(currentSlide - 1);
+                } else {
+                    goToSlide(totalSlides - 1); // Loop to the end
+                }
+            });
+
+            sliderNext.addEventListener('click', () => {
+                if (currentSlide < totalSlides - 1) {
+                    goToSlide(currentSlide + 1);
+                } else {
+                    goToSlide(0); // Loop to the beginning
+                }
+            });
+
+            // Auto-scroll
+            let autoScrollInterval = setInterval(() => {
+                if (currentSlide < totalSlides - 1) {
+                    goToSlide(currentSlide + 1);
+                } else {
+                    goToSlide(0);
+                }
+            }, 5000);
+
+            // Pause auto-scroll on hover
+            const sliderContainer = document.querySelector('.slider-container');
+            sliderContainer.addEventListener('mouseenter', () => {
+                clearInterval(autoScrollInterval);
+            });
+
+            sliderContainer.addEventListener('mouseleave', () => {
+                autoScrollInterval = setInterval(() => {
+                    if (currentSlide < totalSlides - 1) {
+                        goToSlide(currentSlide + 1);
+                    } else {
+                        goToSlide(0);
+                    }
+                }, 5000);
+            });
+
+            // Chart 1: Completed Advisories by Priority
+            const priorityCtx = document.getElementById('completedByPriorityChart').getContext('2d');
+            const priorityChart = new Chart(priorityCtx, {
+                type: 'bar',
+                data: {
+                    labels: ['Critical', 'High', 'Medium', 'Low'],
+                    datasets: [{
+                        label: 'Completed Advisories',
+                        data: [17, 35, 46, 34],
+                        backgroundColor: [
+                            'rgba(220, 38, 38, 0.7)',
+                            'rgba(245, 158, 11, 0.7)',
+                            'rgba(245, 158, 11, 0.5)',
+                            'rgba(16, 185, 129, 0.7)'
+                        ],
+                        borderColor: [
+                            'rgba(220, 38, 38, 1)',
+                            'rgba(245, 158, 11, 1)',
+                            'rgba(245, 158, 11, 0.8)',
+                            'rgba(16, 185, 129, 1)'
+                        ],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+
+            // Chart 2: Completed Advisories by Sector
+            const sectorCtx = document.getElementById('completedBySectorChart').getContext('2d');
+            const sectorChart = new Chart(sectorCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Defence', 'Finance', 'Education', 'Atomic', 'Power'],
+                    datasets: [{
+                        data: [32, 32, 27, 18, 23],
+                        backgroundColor: [
+                            'rgba(59, 130, 246, 0.7)',
+                            'rgba(16, 185, 129, 0.7)',
+                            'rgba(139, 92, 246, 0.7)',
+                            'rgba(245, 158, 11, 0.7)',
+                            'rgba(239, 68, 68, 0.7)'
+                        ],
+                        borderColor: [
+                            'rgba(59, 130, 246, 1)',
+                            'rgba(16, 185, 129, 1)',
+                            'rgba(139, 92, 246, 1)',
+                            'rgba(245, 158, 11, 1)',
+                            'rgba(239, 68, 68, 1)'
+                        ],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'right',
+                        }
+                    }
+                }
+            });
+
+            // Make news items clickable
+            const newsItems = document.querySelectorAll('.news-item');
+            newsItems.forEach(item => {
+                item.addEventListener('click', function () {
+                    // Remove active class from all items
+                    newsItems.forEach(i => i.classList.remove('active'));
+                    // Add active class to clicked item
+                    this.classList.add('active');
+                });
+            });
+
+            // Priority filters for news
+            const priorityFilters = document.querySelectorAll('.priority-filter');
+            priorityFilters.forEach(filter => {
+                filter.addEventListener('click', function () {
+                    // Remove active class from all filters
+                    priorityFilters.forEach(f => f.classList.remove('active', 'bg-blue-600', 'text-white'));
+                    // Add active class to clicked filter
+                    this.classList.add('active', 'bg-blue-600', 'text-white');
+
+                    const priority = this.getAttribute('data-priority');
+
+                    // Show/hide news items based on priority
+                    newsItems.forEach(item => {
+                        if (priority === 'all' || item.getAttribute('data-priority') === priority) {
+                            item.style.display = 'block';
+                        } else {
+                            item.style.display = 'none';
+                        }
+                    });
+
+                    // Make sure at least one news item is active
+                    const visibleItems = Array.from(newsItems).filter(item => item.style.display !== 'none');
+                    if (visibleItems.length > 0 && !visibleItems.some(item => item.classList.contains('active'))) {
+                        visibleItems[0].classList.add('active');
+                    }
+                });
+            });
+
+            // Sector filters for news
+            const sectorFilters = document.querySelectorAll('.sector-filter');
+            const priorityFilterContainer = document.querySelector('.priority-filters');
+
+            // Define priority counts for each sector
+            const sectorPriorityCounts = {
+                'all': { critical: 10, high: 25, medium: 42, low: 30 },
+                'defence': { critical: 3, high: 7, medium: 12, low: 5 },
+                'finance': { critical: 2, high: 5, medium: 8, low: 11 },
+                'education': { critical: 1, high: 4, medium: 9, low: 7 },
+                'atomic': { critical: 2, high: 3, medium: 5, low: 4 },
+                'power': { critical: 2, high: 6, medium: 8, low: 3 }
+            };
+
+            sectorFilters.forEach(filter => {
+                filter.addEventListener('click', function () {
+                    // Remove active class from all filters
+                    sectorFilters.forEach(f => f.classList.remove('active', 'bg-blue-600', 'text-white'));
+                    // Add active class to clicked filter
+                    this.classList.add('active', 'bg-blue-600', 'text-white');
+
+                    const sector = this.getAttribute('data-sector');
+
+                    // Update priority filter counts
+                    const counts = sectorPriorityCounts[sector];
+                    priorityFilters.forEach(pFilter => {
+                        const priority = pFilter.getAttribute('data-priority');
+                        if (priority !== 'all') {
+                            const count = counts[priority];
+                            pFilter.textContent = `${priority.charAt(0).toUpperCase() + priority.slice(1)} (${count})`;
+                        }
+                    });
+
+                    // Show/hide news items based on sector
+                    newsItems.forEach(item => {
+                        if (sector === 'all' || item.getAttribute('data-sector') === sector) {
+                            item.style.display = 'block';
+                        } else {
+                            item.style.display = 'none';
+                        }
+                    });
+
+                    // Make sure at least one news item is active
+                    const visibleItems = Array.from(newsItems).filter(item => item.style.display !== 'none');
+                    if (visibleItems.length > 0 && !visibleItems.some(item => item.classList.contains('active'))) {
+                        visibleItems[0].classList.add('active');
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+
+</html>
